@@ -1,99 +1,124 @@
-<html>
+<!DOCTYPE html>
+  <html>
     <!-- reference for code: https://stackoverflow.com/questions/2368784/draw-on-html5-canvas-using-a-mouse -->
-    <script type="text/javascript">
-    var canvas, ctx, flag = false,
-        prevX = 0,
-        currX = 0,
-        prevY = 0,
-        currY = 0,
-        dot_flag = false;
+    <head>
+	    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>
+	    <script type="text/javascript">
 
-    var x = "black",
-        y = 2;
+	    //load the model
+	    model = await tf.loadModel('model/model.json')
 
-    strokes = []
-    function init() {
-        canvas = document.getElementById('can');
-        ctx = canvas.getContext("2d");
-        w = canvas.width;
-        h = canvas.height;
+	    var canvas, ctx, flag = false,
+		prevX = 0,
+		currX = 0,
+		prevY = 0,
+		currY = 0,
+		dot_flag = false;
 
-        canvas.addEventListener("mousemove", function (e) {
-            findxy('move', e)
-        }, false);
-        canvas.addEventListener("mousedown", function (e) {
-            findxy('down', e)
-        }, false);
-        canvas.addEventListener("mouseup", function (e) {
-            findxy('up', e)
-        }, false);
-        canvas.addEventListener("mouseout", function (e) {
-            findxy('out', e)
-        }, false);
-    }
+	    var x = "black",
+		y = 2;
 
-    function draw() {
-        ctx.beginPath();
-        ctx.moveTo(prevX, prevY);
-        ctx.lineTo(currX, currY);
-        ctx.strokeStyle = x;
-        ctx.lineWidth = y;
-        ctx.stroke();
-        ctx.closePath();
-    }
+	    strokes = []
 
-    function erase() {
-        var m = confirm("Want to clear");
-        if (m) {
-            ctx.clearRect(0, 0, w, h);
-            document.getElementById("canvasimg").style.display = "none";
-        }
-        strokes = []
-    }
+	    //function to preprocess data and convert into 5 stroke format	
+	    function convert_data(data)
+	    {
+	    	start_stroke_token = [0,0,1,0,0];
+                result = tf.zeros((1, strokes.length + 1 , 5), dtype = tf.float32);
+                l = strokes.length;
+                result[0][0:l][0:2] = strokes[:][0:2];
+		result[0][0:l][3] = strokes[:][2];
+                result[0][0:l][2] = 1 - result[0][0:l][3];
+		result[0][l:][4] = 1;
+		result[0].shift(start_stroke_token);
+                alert(result.length);
+	    }           
+	    
+	    function init() {
+		canvas = document.getElementById('can');
+		ctx = canvas.getContext("2d");
+		w = canvas.width;
+		h = canvas.height;
 
-    function findxy(res, e) {
-        if (res == 'down') {
-            prevX = currX;
-            prevY = currY;
-            currX = e.clientX - canvas.offsetLeft;
-            currY = e.clientY - canvas.offsetTop;
+		canvas.addEventListener("mousemove", function (e) {
+		    findxy('move', e)
+		}, false);
+		canvas.addEventListener("mousedown", function (e) {
+		    findxy('down', e)
+		}, false);
+		canvas.addEventListener("mouseup", function (e) {
+		    findxy('up', e)
+		}, false);
+		canvas.addEventListener("mouseout", function (e) {
+		    findxy('out', e)
+		}, false);
+	    }
 
-            flag = true;
-            dot_flag = true;
-            if (dot_flag) {
-                ctx.beginPath();
-                ctx.fillStyle = x;
-                strokes.push([prevX-currX, prevY-currY, 0])
-                ctx.fillRect(currX, currY, 2, 2);
-                ctx.closePath();
-                dot_flag = false;
-            }
-        }
-        if (res == 'up') {
-            strokes[strokes.length-1][2] = 1;
-            flag = false;
-        }
-        if(res == "out")
-        {
-          flag = false;
-        }
-        if (res == 'move') {
-            if (flag) {
-                prevX = currX;
-                prevY = currY;
-                currX = e.clientX - canvas.offsetLeft;
-                currY = e.clientY - canvas.offsetTop;
-                strokes.push([prevX-currX, prevY-currY, 0])
-                draw();
-            }
-        }
-    }
+	    function draw() {
+		ctx.beginPath();
+		ctx.moveTo(prevX, prevY);
+		ctx.lineTo(currX, currY);
+		ctx.strokeStyle = x;
+		ctx.lineWidth = y;
+		ctx.stroke();
+		ctx.closePath();
+	    }
 
-    function predict_sketch()
-    {
-      //need to send strokes to python function for testing.
-    }
-    </script>
+	    function erase() {
+		var m = confirm("Want to clear");
+		if (m) {
+		    ctx.clearRect(0, 0, w, h);
+		    document.getElementById("canvasimg").style.display = "none";
+		}
+		strokes = []
+	    }
+
+	    function findxy(res, e) {
+		if (res == 'down') {
+		    prevX = currX;
+		    prevY = currY;
+		    currX = e.clientX - canvas.offsetLeft;
+		    currY = e.clientY - canvas.offsetTop;
+
+		    flag = true;
+		    dot_flag = true;
+		    if (dot_flag) {
+		        ctx.beginPath();
+		        ctx.fillStyle = x;
+		        strokes.push([prevX-currX, prevY-currY, 0])
+		        ctx.fillRect(currX, currY, 2, 2);
+		        ctx.closePath();
+		        dot_flag = false;
+		    }
+		}
+		if (res == 'up') {
+		    strokes[strokes.length-1][2] = 1;
+		    flag = false;
+		}
+		if(res == "out")
+		{
+		  flag = false;
+		}
+		if (res == 'move') {
+		    if (flag) {
+		        prevX = currX;
+		        prevY = currY;
+		        currX = e.clientX - canvas.offsetLeft;
+		        currY = e.clientY - canvas.offsetTop;
+		        strokes.push([prevX-currX, prevY-currY, 0])
+		        draw();
+		    }
+		}
+	    }
+
+	    function predict_sketch()
+	    {
+	      //need to send strokes to python function for testing.
+              convert_data(strokes);
+	      
+	    }
+	    </script>
+    </head>
     <body onload="init()">
         <canvas id="can" width="400" height="400" style="position:absolute;top:10%;left:10%;border:2px solid;"></canvas>
         <img id="canvasimg" style="position:absolute;top:10%;left:52%;" style="display:none;">
