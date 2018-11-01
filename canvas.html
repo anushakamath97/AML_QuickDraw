@@ -1,12 +1,10 @@
 <!DOCTYPE html>
   <html>
     <!-- reference for code: https://stackoverflow.com/questions/2368784/draw-on-html5-canvas-using-a-mouse -->
-	    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.10.0"> </script>
-	    <script type="module">
+	    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>
 
-      import * as tf from "@tensorflow/tfjs";
-      //load the model
-      model = tf.loadModel('http://localhost/AML_Project/model/model.json');
+	    <script type="text/javascript">
+
 
 	    var canvas, ctx, flag = false,
   		prevX = 0,
@@ -17,7 +15,8 @@
 
   	  var x = "black", y = 2;
 
-	    strokes = []
+	    strokes = [];
+      max_seq_len = 34; //from model
 
 	    function init() {
     		canvas = document.getElementById('can');
@@ -99,30 +98,35 @@
 	    function predict_sketch()
 	    {
 	      //need to send strokes to python function for testing.
-
         var test_data = convert_data(strokes);
-        var encoder_input = [], decoder_input = []
-        encoder_input.push(test_data[0].slice(1,test_data[0].length));
-        decoder_input.push(test_data[0].slice(0,test_data[0].length-1));
-        const pred = model.predict([encoder_input,decoder_input]).dataSync();
+        run(test_data);
 	    }
 
       //function to preprocess data and convert into 5 stroke format
 	    function convert_data(data)
 	    {
+        result = tf.zeros([1,max_seq_len+1,5]);
         start_stroke_token = [0,0,1,0,0];
-        result = [[]];
+        if(strokes.length > max_seq_len)
+          strokes = strokes.slice(0,max_seq_len);
         for (var i = 0; i < strokes.length; i++) {
-          result[0][i] = strokes[i];
-          var t = result[0][i][2];
-          result[0][i].splice(2,0,1-t);
-          result[0][i].push(0);
+          result[0,i,0]= strokes[i][0];
+          result[0,i,1]= strokes[i][1];
+          result[0,i,3] = strokes[i][2];
+          result[0,i,2] = 1 - result[0,i,3];
         }
-        result[0].unshift(start_stroke_token);
-        return tf.convert_to_tensor(result,dtype = tf.float32);
+        for (var i = strokes.length; i < max_seq_len+1; i++) {
+          result[0,i,4] = 1;
+        }
+
+        result[0,0,2] = start_stroke_token[2];
+        result[0,0,3] = start_stroke_token[3];
+        result[0,0,4] = start_stroke_token[4];
+        return result;
 	    }
 	    </script>
     <body onload="init()">
+        <script src="./canvas.js"></script>
         <canvas id="can" width="400" height="400" style="position:absolute;top:10%;left:10%;border:2px solid;"></canvas>
         <img id="canvasimg" style="position:absolute;top:10%;left:52%;" style="display:none;">
         <input type="button" value="CLEAR" id="clr" size="23" onclick="erase()" style="position:absolute;top:80%;left:5%;">
