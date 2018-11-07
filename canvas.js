@@ -8,8 +8,31 @@ async function run(decoder_input)
   const pred = model.predict([decoder_input,sample_input]).dataSync();
 
   console.log("Prediction Done");
-   op = tf.round(tf.tensor3d(pred,sample_input.shape));
-  div = document.createElement('div');
-  div.innerHTML = op;
-  document.body.appendChild(div);
+  //op = tf.reshape(tf.round(pred),sample_input.shape);
+
+  result = []
+  ind = -1;
+
+  for (var i = 0; i < pred.length; i++) {
+    if(i%5 == 0)
+    { result.push([]);
+      ind += 1;
+    }
+    result[ind].push(Math.round(pred[i]));
+  }
+
+  canvas = document.getElementById("can");
+  ctx = canvas.getContext("2d");
+  prevX = 0
+  prevY = 0
+
+  for (var i = 0; i < result.length; i++) {
+    currX = prevX + result[i][0];
+    currY = prevY + result[i][1];
+    ctx.beginPath();
+    ctx.fillRect(currX, currY, 2, 2);
+    ctx.closePath();
+    prevX = currX;
+    prevY = currY;
+  }
 }

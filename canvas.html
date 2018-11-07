@@ -2,7 +2,7 @@
   <html>
     <!-- reference for code: https://stackoverflow.com/questions/2368784/draw-on-html5-canvas-using-a-mouse -->
 	    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>
-
+      <link rel="stylesheet" href="canvas.css">
 	    <script type="text/javascript">
 
 
@@ -16,7 +16,7 @@
   	  var x = "black", y = 2;
 
 	    strokes = [];
-      max_seq_len = 34; //from model
+      max_seq_len = 129; //from model
 
 	    function init() {
     		canvas = document.getElementById('can');
@@ -127,9 +127,10 @@
 	    </script>
     <body onload="init()">
         <script src="./canvas.js"></script>
-        <canvas id="can" width="400" height="400" style="position:absolute;top:10%;left:10%;border:2px solid;"></canvas>
-        <img id="canvasimg" style="position:absolute;top:10%;left:52%;" style="display:none;">
-        <input type="button" value="CLEAR" id="clr" size="23" onclick="erase()" style="position:absolute;top:80%;left:5%;">
-        <input type="button" onclick="setTimeout(predict_sketch,5050)" value="START">
+        <canvas id="can" width="800" height="400"></canvas>
+        <div id="buttons">
+          <input type="button" value="CLEAR" id="clr" onclick="erase()">&nbsp;&nbsp
+          <input type="button" onclick="setTimeout(predict_sketch,5050)" value="START">
+        </div>
     </body>
     </html>
