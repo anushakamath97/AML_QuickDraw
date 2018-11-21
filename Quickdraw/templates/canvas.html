@@ -1,165 +1,219 @@
 <!DOCTYPE html>
-  <html>
-      <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>
-      <link rel="stylesheet" href="{{url_for('static',filename='css/canvas.css')}}">
-	    <script type="text/javascript">
+<html>
+	<link rel="stylesheet" href="{{url_for('static',filename='css/canvas.css')}}">
+	<script type="text/javascript">
 
-	    var canvas, ctx, flag = false,
-  		prevX = 0,
-  		currX = 0,
-  		prevY = 0,
-  		currY = 0,
-  		dot_flag = false;
+		var canvas, ctx, flag = false, prevX = 0, prevY = 0, currX = 0, currY = 0, dot_flag = false;
+		var x = "black", y = 2;
+		var strokes = [];
+      		seq_len_options = {'cat' : 129, 'square':34, 'airplane': 99}; //from model
 
-  	  var x = "black", y = 2;
+		function init() {
+	    		canvas = document.getElementById('can');
+	    		ctx = canvas.getContext("2d");
+	    		w = canvas.width;
+	    		h = canvas.height;
 
-	    strokes = [];
-      max_seq_len = 129; //from model
+			model = "square";
+			max_seq_len = seq_len_options[model];
 
-	    function init() {
-    		canvas = document.getElementById('can');
-    		ctx = canvas.getContext("2d");
-    		w = canvas.width;
-    		h = canvas.height;
+	    		canvas.addEventListener("mousemove", function (e) {
+	    		    findxy('move', e)
+	    		}, false);
+	    		canvas.addEventListener("mousedown", function (e) {
+	    		    findxy('down', e)
+	    		}, false);
+	    		canvas.addEventListener("mouseup", function (e) {
+	    		    findxy('up', e)
+	    		}, false);
+	    		canvas.addEventListener("mouseout", function (e) {
+	    		    findxy('out', e)
+	    		}, false);
+		}
 
-    		canvas.addEventListener("mousemove", function (e) {
-    		    findxy('move', e)
-    		}, false);
-    		canvas.addEventListener("mousedown", function (e) {
-    		    findxy('down', e)
-    		}, false);
-    		canvas.addEventListener("mouseup", function (e) {
-    		    findxy('up', e)
-    		}, false);
-    		canvas.addEventListener("mouseout", function (e) {
-    		    findxy('out', e)
-    		}, false);
-	    }
+		function draw() {
+	    		ctx.beginPath();
+	    		ctx.moveTo(prevX, prevY);
+	    		ctx.lineTo(currX, currY);
+	    		ctx.strokeStyle = x;
+	    		ctx.lineWidth = y;
+	    		ctx.stroke();
+	    		ctx.closePath();
+		}
 
-	    function draw() {
-    		ctx.beginPath();
-    		ctx.moveTo(prevX, prevY);
-    		ctx.lineTo(currX, currY);
-    		ctx.strokeStyle = x;
-    		ctx.lineWidth = y;
-    		ctx.stroke();
-    		ctx.closePath();
-	    }
+		function erase() {
+	    		var m = confirm("Want to clear");
+	    		if (m) {
+	    		    ctx.clearRect(0, 0, w, h);
+	    		    document.getElementById("canvasimg").style.display = "none";
+	    		}
+	    		strokes = [];
+		}
 
-	    function erase() {
-    		var m = confirm("Want to clear");
-    		if (m) {
-    		    ctx.clearRect(0, 0, w, h);
-    		    document.getElementById("canvasimg").style.display = "none";
-    		}
-    		strokes = [];
-	    }
+		function findxy(res, e) {
+	    		if (res == 'down') {
+	    		    prevX = currX;
+	    		    prevY = currY;
+	    		    currX = e.clientX - canvas.offsetLeft;
+	    		    currY = e.clientY - canvas.offsetTop;
 
-	    function findxy(res, e) {
-    		if (res == 'down') {
-    		    prevX = currX;
-    		    prevY = currY;
-    		    currX = e.clientX - canvas.offsetLeft;
-    		    currY = e.clientY - canvas.offsetTop;
+	    		    flag = true;
+	    		    dot_flag = true;
+	    		    if (dot_flag) {
+	    		        ctx.beginPath();
+	    		        ctx.fillStyle = x;
+	    		        strokes.push([prevX-currX, prevY-currY, 0])
+	    		        ctx.fillRect(currX, currY, 2, 2);
+	    		        ctx.closePath();
+	    		        dot_flag = false;
+	    		    }
+    			}
+	    		if (res == 'up') {
+	    		    strokes[strokes.length-1][2] = 1;
+	    		    flag = false;
+	    		}
+	    		if(res == "out")
+	    		{
+	    		  flag = false;
+	    		}
+	    		if (res == 'move') {
+	    		    if (flag) {
+	    		        prevX = currX;
+	    		        prevY = currY;
+	    		        currX = e.clientX - canvas.offsetLeft;
+	    		        currY = e.clientY - canvas.offsetTop;
+	    		        strokes.push([prevX-currX, prevY-currY, 0])
+	    		        draw();
+	    		    }
+	    		}
+		}
 
-    		    flag = true;
-    		    dot_flag = true;
-    		    if (dot_flag) {
-    		        ctx.beginPath();
-    		        ctx.fillStyle = x;
-    		        strokes.push([prevX-currX, prevY-currY, 0])
-    		        ctx.fillRect(currX, currY, 2, 2);
-    		        ctx.closePath();
-    		        dot_flag = false;
-    		    }
-    		}
-    		if (res == 'up') {
-    		    strokes[strokes.length-1][2] = 1;
-    		    flag = false;
-    		}
-    		if(res == "out")
-    		{
-    		  flag = false;
-    		}
-    		if (res == 'move') {
-    		    if (flag) {
-    		        prevX = currX;
-    		        prevY = currY;
-    		        currX = e.clientX - canvas.offsetLeft;
-    		        currY = e.clientY - canvas.offsetTop;
-    		        strokes.push([prevX-currX, prevY-currY, 0])
-    		        draw();
-    		    }
-    		}
-	    }
+		xhr = new XMLHttpRequest();
 
-      xhr = new XMLHttpRequest();
+		function get_original()
+		{
+			xhr.onreadystatechange = show_data_original;
+			xhr.open("GET","http://localhost:5000/getRandom?model="+model,true);
+			xhr.send();
+	    	}
 
-	    function predict_sketch()
-	    {
-	      //need to send strokes to python function for testing.
-        var test_data = convert_data(strokes);
-        xhr.onreadystatechange = show_data;
-        xhr.open("POST","http://localhost:5000/predictDiagram",true);
-        xhr.setRequestHeader('Content-type','application/json; charset=utf-8');
-        json = JSON.stringify({'strokes':test_data});
-        xhr.send(json);
-	    }
+		function predict_sketch()
+		{
+			var test_data = convert_data(strokes);
+			var prev = [currX, currY];
+			xhr.onreadystatechange = show_data;
+			xhr.open("POST","http://localhost:5000/predictDiagram",true);
+			xhr.setRequestHeader('Content-type','application/json; charset=utf-8');
+			json = JSON.stringify({'strokes':test_data, 'prev': prev, 'model':model});
+			xhr.send(json);
+		}
 
-      function show_data()
-      {
-        console.log(xhr.responseText);
+		function show_data()
+		{
+			if(xhr.readyState == 4 && xhr.status == 200)
+			{	
+				var response = JSON.parse(xhr.responseText);
+				var pred = response['strokes'];
+				prevX = response['prev'][0];
+				prevY = response['prev'][1];
+				x = "red";
+				canvas = document.getElementById('can');
+		    		ctx = canvas.getContext("2d");
+				for (var i = 0; i < pred.length; i++) {
+					currX = prevX + pred[i][0];
+				  	currY = prevY + pred[i][1];
+				  if (pred[i][2] == 1)
+				  {	
+				  	ctx.beginPath();
+				  	ctx.fillRect(currX, currY, 2, 2);
+				  	ctx.closePath();
+				  	draw();
+				  }
+				  prevX = currX;
+				  prevY = currY;
+				}
+			}
+			x = "black";
+			flag = false;
+	  		prevX = 0;
+	  		currX = 0;
+	  		prevY = 0;
+	  		currY = 0;
+	  		dot_flag = false;
+		}
 
-        console.log("Prediction Done");
-        //op = tf.reshape(tf.round(pred),sample_input.shape);
+		function show_data_original()
+		{
+			ctx.clearRect(0, 0, w, h);
+			if(xhr.readyState == 4 && xhr.status == 200)
+			{	
+				var response = JSON.parse(xhr.responseText);
+				var pred = response['strokes'];
+				prevX = response['prev'][0] + canvas.offsetLeft;
+				prevY = response['prev'][1] + canvas.offsetTop;
+		
+				canvas = document.getElementById('can');
+		    		ctx = canvas.getContext("2d");
+				for (var i = 0; i < pred.length; i++) {
+					currX = prevX + pred[i][0];
+				  	currY = prevY + pred[i][1];
+					  if (pred[i][2] == 1)
+					  {	
+					  	ctx.beginPath();
+					  	ctx.fillRect(currX, currY, 2, 2);
+					  	ctx.closePath();
+					  	draw();
+					  }
+				  prevX = currX;
+				  prevY = currY;
+				}
+			}
+			flag = false;
+		  	prevX = 0;
+		  	currX = 0;
+		  	prevY = 0;
+		  	currY = 0;
+		  	dot_flag = false;
+		}
 
-        var pred = JSON.parse(xhr.responseText)['strokes'];
+		function convert_data(data)
+		{
+			result = [[]];
+			start_stroke_token = [0,0,1,0,0];
+			result[0].push(start_stroke_token)
+			if(strokes.length > max_seq_len)
+			  strokes = strokes.slice(0,max_seq_len);
+			var j = 0;
+			for (var i = 0; i < strokes.length; i++) {
+			  j = i+1;
+			  result[0].push([0,0,0,0,0])
+			  result[0][j][0]= strokes[i][0];
+			  result[0][j][1]= strokes[i][1];
+			  result[0][j][3] = strokes[i][2];
+			  result[0][j][2] = 1 - result[0][j][3];
+			}
+			result[0].push([0,0,0,0,1]);
+		
+			return result;
+		}
 
-        canvas = document.getElementById("can");
-        ctx = canvas.getContext("2d");
-        prevX = 0
-        prevY = 0
-
-        for (var i = 0; i < pred.length; i++) {
-          currX = prevX + result[i][0];
-          currY = prevY + result[i][1];
-          ctx.beginPath();
-          ctx.fillRect(currX, currY, 2, 2);
-          ctx.closePath();
-          prevX = currX;
-          prevY = currY;
-        }
-      }
-
-      //function to preprocess data and convert into 5 stroke format
-	    function convert_data(data)
-	    {
-        result = [[]];
-        start_stroke_token = [0,0,1,0,0];
-        result[0].push(start_stroke_token)
-        if(strokes.length > max_seq_len)
-          strokes = strokes.slice(0,max_seq_len);
-        var j = 0;
-        for (var i = 0; i < strokes.length; i++) {
-          j = i+1;
-          result[0].push([0,0,0,0,0])
-          result[0][j][0]= strokes[i][0];
-          result[0][j][1]= strokes[i][1];
-          result[0][j][3] = strokes[i][2];
-          result[0][j][2] = 1 - result[0][j][3];
-        }
-        for (var i = strokes.length; i < max_seq_len; i++) {
-          result[0].push([0,0,0,0,0])
-          result[0][i][4] = 1;
-        }
-        return result;
-	    }
-	    </script>
-    <body onload="init()">
-        <canvas id="can" width="800" height="400"></canvas>
-        <div id="buttons">
-          <input type="button" value="CLEAR" id="clr" onclick="erase()">&nbsp;&nbsp
-          <input type="button" onclick="setTimeout(predict_sketch,5050)" value="START">
-        </div>
-    </body>
-    </html>
+		function setModel(event)
+		{
+			model = event.target.value;
+			max_seq_len = seq_len_options[model];
+		}
+	</script>
+	<body onload="init()">
+		<canvas id="can" width="800" height="400"></canvas>
+		<div id="buttons">
+		  <select onclick="setModel(event)">
+			  <option value="square">Square</option>
+			  <option value="cat">Cat</option>
+			  <option value="airplane">Airplane</option>
+		  </select>
+		  <input type="button" value="CLEAR" id="clr" onclick="erase()">&nbsp;&nbsp
+		  <input type="button" onclick="setTimeout(predict_sketch,10050)" value="START">
+		  <input type="button" value="GET ORIGINAL" id="clr" onclick="get_original()">
+		</div>
+	</body>
+</html>
