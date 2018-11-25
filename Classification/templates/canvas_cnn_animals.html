@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+  <html>
+    <!-- reference for code: https://stackoverflow.com/questions/2368784/draw-on-html5-canvas-using-a-mouse -->
+	    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"> </script>
+
+	    <script type="text/javascript">
+
+
+	    var canvas, ctx, flag = false,
+  		prevX = 0,
+  		currX = 0,
+  		prevY = 0,
+  		currY = 0,
+  		dot_flag = false;
+
+  	  var x = "black", y = 2;
+
+	    strokes = [];
+      max_seq_len = 208; //from model
+
+	    function init() {
+    		canvas = document.getElementById('can');
+    		ctx = canvas.getContext("2d");
+    		w = canvas.width;
+    		h = canvas.height;
+
+    		canvas.addEventListener("mousemove", function (e) {
+    		    findxy('move', e)
+    		}, false);
+    		canvas.addEventListener("mousedown", function (e) {
+    		    findxy('down', e)
+    		}, false);
+    		canvas.addEventListener("mouseup", function (e) {
+    		    findxy('up', e)
+    		}, false);
+    		canvas.addEventListener("mouseout", function (e) {
+    		    findxy('out', e)
+    		}, false);
+	    }
+
+	    function draw() {
+    		ctx.beginPath();
+    		ctx.moveTo(prevX, prevY);
+    		ctx.lineTo(currX, currY);
+    		ctx.strokeStyle = x;
+    		ctx.lineWidth = y;
+    		ctx.stroke();
+    		ctx.closePath();
+	    }
+
+	    function erase() {
+    		var m = confirm("Want to clear");
+    		if (m) {
+    		    ctx.clearRect(0, 0, w, h);
+    		    document.getElementById("canvasimg").style.display = "none";
+              document.getElementById("res").style.display = "none";
+    		}
+    		strokes = [];
+	    }
+
+	    function findxy(res, e) {
+    		if (res == 'down') {
+    		    prevX = currX;
+    		    prevY = currY;
+    		    currX = e.clientX - canvas.offsetLeft;
+    		    currY = e.clientY - canvas.offsetTop;
+
+    		    flag = true;
+    		    dot_flag = true;
+    		    if (dot_flag) {
+    		        ctx.beginPath();
+    		        ctx.fillStyle = x;
+    		        strokes.push([prevX-currX, prevY-currY, 0])
+    		        ctx.fillRect(currX, currY, 2, 2);
+    		        ctx.closePath();
+    		        dot_flag = false;
+    		    }
+    		}
+    		if (res == 'up') {
+    		    strokes[strokes.length-1][2] = 1;
+    		    flag = false;
+    		}
+    		if(res == "out")
+    		{
+    		  flag = false;
+    		}
+    		if (res == 'move') {
+    		    if (flag) {
+    		        prevX = currX;
+    		        prevY = currY;
+    		        currX = e.clientX - canvas.offsetLeft;
+    		        currY = e.clientY - canvas.offsetTop;
+    		        strokes.push([currX - prevX, currY- prevY, 0])
+    		        draw();
+    		    }
+    		}
+	    }
+
+
+      //function to preprocess data and convert into 5 stroke format
+	    function predict_sketch(data)
+	    {
+         result = []
+        //console.log(strokes);
+        //start_stroke_token = [0,0];
+        temp_strokes = strokes
+        
+        for (var i = 0; i < temp_strokes.length; i++) {
+          result.push([temp_strokes[i][0],temp_strokes[i][1]]);
+        }
+        console.log(result.length);
+        
+        xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function(){
+      	 if (xhr.readyState == 4 && xhr.status == 200){
+        	  	value = xhr.response;
+              //value = JSON.parse(value);
+              document.getElementById("res").style.display = "block";
+        	   pred = document.getElementById("res");
+             pred.innerHTML = value["result"];
+        	}
+       }
+       data_to_send = {"stroke":result};
+       xhr.open('POST', '/predict',true);
+       xhr.responseType = 'json';
+       xhr.setRequestHeader("Content-Type", 'application/json');
+       xhr.send(JSON.stringify(data_to_send)); 
+	    }
+	    </script>
+   <body onload="init()">
+        <canvas id="can" width="600" height="400" style="position:absolute;top:10%;left:10%;border:2px solid;"></canvas>
+        <img id="canvasimg" style="position:absolute;top:10%;left:52%;" style="display:none;">
+        <input type="button" value="CLEAR" id="clr" size="23" onclick="erase()">
+        <input type="button"  value="START">
+        <input type="button" onclick="predict_sketch()" value="Predict"></input>
+        <div id="res"></div>
+    </body>
+    </html>
